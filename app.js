@@ -4,16 +4,26 @@ const mongoose = require('mongoose');
 
 const app = express();
 
+//Map global promise - get rid of warning
+//mongoose.Promise = global.Promise;
+
 //connect to mongoose
 mongoose.connect('mongodb://localhost/brainstorm', {
-    useMongoClient: true
-})
+        useMongoClient: true,
+        useUnifiedTopology: true
+    })
     .then(() => console.log('MongoDB Connected...'))
     .catch(err => console.log(err));
 
+//Handle Idea Model
+require('./models/Ideas');
+const Idea = mongoose.model('ideas');
+
 
 //handlebars middleware
-app.engine('handlebars', exphbs({ defaultLayout: 'main' }));
+app.engine('handlebars', exphbs({
+    defaultLayout: 'main'
+}));
 app.set('view engine', 'handlebars');
 
 
@@ -23,7 +33,9 @@ app.set('view engine', 'handlebars');
 //Index Route
 app.get('/', (req, res) => {
     const title = 'Welcome One';
-    res.render('index', { title: title });
+    res.render('index', {
+        title: title
+    });
 });
 
 //About Route
