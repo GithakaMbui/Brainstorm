@@ -1,5 +1,8 @@
 const express = require("express");
 const exphbs = require("express-handlebars");
+const methodOverride = require("method-override");
+const flash = require("connect-flash");
+const session = require("express-session");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 
@@ -38,6 +41,28 @@ app.use(
     }),
 );
 app.use(bodyParser.json());
+
+//Method override middleware
+app.use(methodOverride('_method'));
+
+
+
+//Express session middleware
+app.use(session({
+    secret: 'secret',
+    resave: true,
+    saveUninitialized: true
+}))
+
+app.use(flash());
+
+//Global variables
+app.use(function (req, res, next) {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
+    next();
+});
 
 //Routing
 
@@ -79,11 +104,19 @@ app.get("/ideas/edit/:id", (req, res) => {
     Idea.findOne({
         _id: req.params.id,
     }).then(idea => {
-        const { _id: id, title, details } = idea;
+        const {
+            _id: id,
+            title,
+            details
+        } = idea;
         console.log(title);
 
         res.render("ideas/edit", {
-            idea: { id, title, details },
+            idea: {
+                id,
+                title,
+                details
+            },
         });
     });
 });
@@ -91,7 +124,10 @@ app.get("/ideas/edit/:id", (req, res) => {
 // Update Idea
 app.post("/ideas/update/:id", (req, res) => {
     const id = req.params.id;
-    const { title, details } = req.body;
+    const {
+        title,
+        details
+    } = req.body;
     let errors = [];
 
     if (!title) {
@@ -112,8 +148,14 @@ app.post("/ideas/update/:id", (req, res) => {
             details: details,
         });
     } else {
-        Idea.findByIdAndUpdate({ _id: id }, { title, details })
+        Idea.findByIdAndUpdate({
+                _id: id
+            }, {
+                title,
+                details
+            })
             .then(() => {
+                req.flash('success_msg', 'Idea updated');
                 res.redirect("/ideas");
             })
             .catch(err => {
@@ -149,9 +191,23 @@ app.post("/ideas", (req, res) => {
             details: req.body.details,
         };
         new Idea(newUser).save().then(idea => {
+            req.flash('success_msg', 'Idea added');
             res.redirect("/ideas");
         });
     }
+});
+
+//Delete Idea
+app.delete('/ideas/:id', (req, res) => {
+    //res.send('Delete');
+    Idea.remove({
+            _id: req.params.id
+        })
+        .then(() => {
+            req.flash('success_msg', 'Idea removed');
+            res.redirect("/ideas");
+        });
+
 });
 
 const port = 5000;
